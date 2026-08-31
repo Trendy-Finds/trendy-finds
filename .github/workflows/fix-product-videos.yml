@@ -10,20 +10,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Swap LCD and P9 videos and set washer video
+      - name: Set videos by product name
         run: |
           python - <<'PY'
           from pathlib import Path
+          import re
           p = Path('index.html')
           s = p.read_text()
-          old_lcd = "video:'U-9aVyrj250'"
-          old_p9 = "video:'P2AG63NeqAA'"
-          tmp = "video:'__VIDEO_SWAP_TMP__'"
-          if old_lcd in s and old_p9 in s:
-              s = s.replace(old_lcd, tmp, 1)
-              s = s.replace(old_p9, old_lcd, 1)
-              s = s.replace(tmp, old_p9, 1)
-          s = s.replace("video:'M5oaiqkXzzw'", "video:'FhGslPtVRpg'")
+
+          def set_video(product, video_id):
+              pattern = rf"(name:'{re.escape(product)}'.{{0,2000}}?video:')[^']*(')"
+              new, count = re.subn(pattern, rf"\g<1>{video_id}\g<2>", s, count=1, flags=re.S)
+              return new, count
+
+          for product, video in [
+              ('LCD Writing Tablet', 'U-9aVyrj250'),
+              ('P9 Wireless Bluetooth Headphones', 'P2AG63NeqAA'),
+              ('Washer Gun', 'FhGslPtVRpg'),
+          ]:
+              s, count = set_video(product, video)
+              print(product, 'updated' if count else 'NOT FOUND')
+
           s = s.replace('P47 Wireless Bluetooth Headphones', 'P9 Wireless Bluetooth Headphones')
           p.write_text(s)
           PY
