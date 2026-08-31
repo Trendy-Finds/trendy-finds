@@ -1,0 +1,40 @@
+name: Fix product videos
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-product-videos.yml'
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Swap LCD and P9 videos and set washer video
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text()
+          old_lcd = "video:'U-9aVyrj250'"
+          old_p9 = "video:'P2AG63NeqAA'"
+          tmp = "video:'__VIDEO_SWAP_TMP__'"
+          if old_lcd in s and old_p9 in s:
+              s = s.replace(old_lcd, tmp, 1)
+              s = s.replace(old_p9, old_lcd, 1)
+              s = s.replace(tmp, old_p9, 1)
+          s = s.replace("video:'M5oaiqkXzzw'", "video:'FhGslPtVRpg'")
+          s = s.replace('P47 Wireless Bluetooth Headphones', 'P9 Wireless Bluetooth Headphones')
+          p.write_text(s)
+          PY
+      - name: Commit changes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          if git diff --cached --quiet; then
+            echo 'No changes needed'
+          else
+            git commit -m 'Fix product video assignments'
+            git push
+          fi
